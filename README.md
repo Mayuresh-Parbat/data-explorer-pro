@@ -1,14 +1,30 @@
-# Mini Data Explorer
+# 📊 Data Explorer Pro
 
-A simple tool to explore CSV datasets.
+An interactive data analytics dashboard built using Streamlit that allows users to explore, filter, and visualize CSV datasets with ease.
 
-## Features
-- Upload CSV files
-- View data summary
-- Analyze columns
-- Generate quick charts
+---
 
-## Tech Stack
+## 🚀 Features
+
+- 📌 Dataset overview with key metrics (rows, columns, missing values)
+- 📄 Interactive data preview
+- 🔍 Advanced filtering system
+- 📊 Dynamic data visualization (Bar, Line, Histogram)
+- 🔗 Compare numeric columns
+- 🔥 Correlation matrix for numeric analysis
+- ⚠ Missing value detection
+- ⚠ Outlier detection
+- ⬇ Export filtered data as CSV
+
+---
+
+## 🛠 Tech Stack
+
 - Python
 - Pandas
+- NumPy
 - Streamlit
+
+---
+
+## 📂 Project Structure
