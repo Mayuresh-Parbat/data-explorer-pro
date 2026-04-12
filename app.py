@@ -6,6 +6,7 @@ st.set_page_config(page_title="Data Explorer Pro+", layout="wide")
 
 st.title("🚀 Data Explorer Pro+")
 
+# ===== SIDEBAR =====
 menu = st.sidebar.selectbox("Navigation", [
     "Overview",
     "Filter Data",
@@ -57,7 +58,7 @@ if uploaded_file:
             top = df[cat_cols[0]].value_counts().idxmax()
             colB.metric("Top Category", top)
 
-        colC.metric("Unique Columns", df.nunique().mean())
+        colC.metric("Avg Uniqueness", int(df.nunique().mean()))
 
         # ===== EXPLAIN DATA =====
         st.markdown("### 🧠 Explain My Data")
@@ -69,6 +70,8 @@ if uploaded_file:
 
             if missing > 0:
                 insights.append(f"Contains {missing} missing values.")
+            else:
+                insights.append("No missing values detected.")
 
             if len(cat_cols) > 0:
                 col = cat_cols[0]
@@ -81,6 +84,22 @@ if uploaded_file:
 
             for i in insights:
                 st.success(i)
+
+        # ===== NEW FEATURE: TOP COLUMNS =====
+        st.markdown("### 🎯 Top Columns Analysis")
+
+        col_scores = []
+
+        for col in df.columns:
+            unique = df[col].nunique()
+            missing_vals = df[col].isnull().sum()
+            score_col = unique - missing_vals
+            col_scores.append((col, score_col))
+
+        top_cols = sorted(col_scores, key=lambda x: x[1], reverse=True)[:3]
+
+        for col, score_val in top_cols:
+            st.info(f"Column '{col}' is highly informative (score: {score_val})")
 
         # ===== DATA PREVIEW =====
         st.markdown("### 📄 Data Preview")
@@ -112,35 +131,44 @@ if uploaded_file:
         st.markdown("## 📊 Visualization")
         st.markdown("---")
 
-        numeric_cols = df.select_dtypes(include=np.number).columns
-        cat_cols = df.select_dtypes(include="object").columns
+        numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+        cat_cols = df.select_dtypes(include="object").columns.tolist()
 
-        # ===== SMART SUGGESTION =====
         if len(cat_cols) > 0:
             st.info(f"💡 Suggested: Bar chart for '{cat_cols[0]}'")
 
         chart_type = st.selectbox("Chart", ["Bar", "Line", "Histogram"])
 
         if chart_type == "Histogram":
-            col = st.selectbox("Numeric Column", numeric_cols)
-            st.bar_chart(df[col].value_counts())
+            if numeric_cols:
+                col = st.selectbox("Numeric Column", numeric_cols)
+                st.bar_chart(df[col].value_counts())
+            else:
+                st.warning("No numeric columns available.")
 
         elif chart_type == "Line":
-            col = st.selectbox("Numeric Column", numeric_cols)
-            st.line_chart(df[col])
+            if numeric_cols:
+                col = st.selectbox("Numeric Column", numeric_cols)
+                st.line_chart(df[col])
+            else:
+                st.warning("No numeric columns available.")
 
         else:
-            col = st.selectbox("Category Column", cat_cols)
-            st.bar_chart(df[col].value_counts().head(10))
+            if cat_cols:
+                col = st.selectbox("Category Column", cat_cols)
+                st.bar_chart(df[col].value_counts().head(10))
+            else:
+                st.warning("No categorical columns available.")
 
         # ===== DATE TREND =====
         st.markdown("### 📅 Trend Analysis")
 
         for c in df.columns:
             try:
-                df[c] = pd.to_datetime(df[c])
-                st.line_chart(df[c].value_counts().sort_index())
-                break
+                temp = pd.to_datetime(df[c], errors='coerce')
+                if temp.notnull().sum() > 0:
+                    st.line_chart(temp.value_counts().sort_index())
+                    break
             except:
                 continue
 
@@ -156,12 +184,15 @@ if uploaded_file:
 
         num_cols = df.select_dtypes(include=np.number).columns
 
-        for col in num_cols:
-            q1 = df[col].quantile(0.25)
-            q3 = df[col].quantile(0.75)
-            iqr = q3 - q1
-            outliers = df[(df[col] < (q1 - 1.5 * iqr)) | (df[col] > (q3 + 1.5 * iqr))]
-            st.write(f"{col}: {len(outliers)} outliers")
+        if len(num_cols) > 0:
+            for col in num_cols:
+                q1 = df[col].quantile(0.25)
+                q3 = df[col].quantile(0.75)
+                iqr = q3 - q1
+                outliers = df[(df[col] < (q1 - 1.5 * iqr)) | (df[col] > (q3 + 1.5 * iqr))]
+                st.write(f"{col}: {len(outliers)} outliers")
+        else:
+            st.warning("No numeric columns available.")
 
 else:
     st.info("📂 Upload a CSV file to start.")
