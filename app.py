@@ -2,11 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title="Data Explorer Pro", layout="wide")
+st.set_page_config(page_title="Data Explorer Pro+", layout="wide")
 
-st.title("📊 Data Explorer Pro")
+st.title("🚀 Data Explorer Pro+")
 
-# ===== SIDEBAR =====
 menu = st.sidebar.selectbox("Navigation", [
     "Overview",
     "Filter Data",
@@ -19,33 +18,75 @@ uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # ===== OVERVIEW =====
+    # ================= OVERVIEW =================
     if menu == "Overview":
         st.markdown("## 📌 Dataset Overview")
         st.markdown("---")
 
+        # ===== METRICS =====
         col1, col2, col3 = st.columns(3)
         col1.metric("Rows", df.shape[0])
         col2.metric("Columns", df.shape[1])
         col3.metric("Missing Values", df.isnull().sum().sum())
 
-        st.markdown("")
+        # ===== DATA QUALITY SCORE =====
+        st.markdown("### 📊 Data Quality Score")
 
+        missing = df.isnull().sum().sum()
+        duplicates = df.duplicated().sum()
+
+        score = 100
+        score -= min(30, missing * 0.1)
+        score -= min(30, duplicates * 0.5)
+
+        st.progress(int(score))
+        st.success(f"Data Quality Score: {int(score)}/100")
+
+        # ===== QUICK INSIGHTS =====
+        st.markdown("### ⚡ Quick Insights")
+
+        colA, colB, colC = st.columns(3)
+
+        num_cols = df.select_dtypes(include=np.number).columns
+        cat_cols = df.select_dtypes(include="object").columns
+
+        if len(num_cols) > 0:
+            colA.metric("Avg Value", round(df[num_cols[0]].mean(), 2))
+
+        if len(cat_cols) > 0:
+            top = df[cat_cols[0]].value_counts().idxmax()
+            colB.metric("Top Category", top)
+
+        colC.metric("Unique Columns", df.nunique().mean())
+
+        # ===== EXPLAIN DATA =====
+        st.markdown("### 🧠 Explain My Data")
+
+        if st.button("Analyze Dataset"):
+            insights = []
+
+            insights.append(f"Dataset has {df.shape[0]} rows and {df.shape[1]} columns.")
+
+            if missing > 0:
+                insights.append(f"Contains {missing} missing values.")
+
+            if len(cat_cols) > 0:
+                col = cat_cols[0]
+                top = df[col].value_counts().idxmax()
+                insights.append(f"'{col}' is dominated by '{top}'.")
+
+            if len(num_cols) > 0:
+                col = num_cols[0]
+                insights.append(f"'{col}' average is {round(df[col].mean(),2)}.")
+
+            for i in insights:
+                st.success(i)
+
+        # ===== DATA PREVIEW =====
         st.markdown("### 📄 Data Preview")
         st.dataframe(df, use_container_width=True)
 
-        st.markdown("### 📊 Column Information")
-        col_info = pd.DataFrame({
-            "Column": df.columns,
-            "Data Type": df.dtypes,
-            "Missing Values": df.isnull().sum()
-        })
-        st.dataframe(col_info, use_container_width=True)
-
-        st.markdown("### 📌 Data Types Distribution")
-        st.write(df.dtypes.value_counts())
-
-    # ===== FILTER DATA =====
+    # ================= FILTER =================
     elif menu == "Filter Data":
         st.markdown("## 🔍 Filter Data")
         st.markdown("---")
@@ -53,132 +94,74 @@ if uploaded_file:
         column = st.selectbox("Select column", df.columns)
 
         if df[column].dtype == "object":
-            value = st.selectbox("Select value", df[column].unique())
+            value = st.selectbox("Value", df[column].unique())
             filtered_df = df[df[column] == value]
         else:
             min_val = float(df[column].min())
             max_val = float(df[column].max())
-            value = st.slider("Select range", min_val, max_val, (min_val, max_val))
+            value = st.slider("Range", min_val, max_val, (min_val, max_val))
             filtered_df = df[(df[column] >= value[0]) & (df[column] <= value[1])]
 
-        st.markdown("### 📄 Filtered Data")
         st.dataframe(filtered_df, use_container_width=True)
 
-        csv = filtered_df.to_csv(index=False).encode('utf-8')
-        st.download_button("⬇ Download Filtered Data", csv, "filtered_data.csv", "text/csv")
+        csv = filtered_df.to_csv(index=False).encode()
+        st.download_button("Download CSV", csv, "filtered.csv")
 
-    # ===== VISUALIZATION =====
+    # ================= VISUALIZATION =================
     elif menu == "Visualization":
-        st.markdown("## 📊 Data Visualization")
+        st.markdown("## 📊 Visualization")
         st.markdown("---")
 
-        # Suggest better columns
-        good_cols = [col for col in df.columns if df[col].nunique() < 50]
+        numeric_cols = df.select_dtypes(include=np.number).columns
+        cat_cols = df.select_dtypes(include="object").columns
 
-        if good_cols:
-            st.info(f"💡 Suggested columns for charts: {good_cols[:5]}")
+        # ===== SMART SUGGESTION =====
+        if len(cat_cols) > 0:
+            st.info(f"💡 Suggested: Bar chart for '{cat_cols[0]}'")
 
-        col1, col2 = st.columns([1, 2])
+        chart_type = st.selectbox("Chart", ["Bar", "Line", "Histogram"])
 
-        with col1:
-            chart_type = st.selectbox("Chart Type", ["Bar", "Line", "Histogram"])
+        if chart_type == "Histogram":
+            col = st.selectbox("Numeric Column", numeric_cols)
+            st.bar_chart(df[col].value_counts())
 
-        with col2:
-            chart_col = st.selectbox("Select Column", df.columns)
+        elif chart_type == "Line":
+            col = st.selectbox("Numeric Column", numeric_cols)
+            st.line_chart(df[col])
 
-        st.markdown("")
-
-        # Avoid bad charts
-        if df[chart_col].nunique() > 50 and df[chart_col].dtype == "object":
-            st.warning("⚠ This column has too many unique values (like IDs). Choose another column.")
         else:
-            st.markdown("### 📈 Chart Output")
+            col = st.selectbox("Category Column", cat_cols)
+            st.bar_chart(df[col].value_counts().head(10))
 
-            if chart_type == "Bar":
-                if df[chart_col].dtype == "object":
-                    st.bar_chart(df[chart_col].value_counts().head(10))
-                else:
-                    st.bar_chart(df[chart_col])
+        # ===== DATE TREND =====
+        st.markdown("### 📅 Trend Analysis")
 
-            elif chart_type == "Line":
-                if df[chart_col].dtype != "object":
-                    st.line_chart(df[chart_col])
-                else:
-                    st.warning("Line chart works better with numeric data.")
+        for c in df.columns:
+            try:
+                df[c] = pd.to_datetime(df[c])
+                st.line_chart(df[c].value_counts().sort_index())
+                break
+            except:
+                continue
 
-            elif chart_type == "Histogram":
-                if df[chart_col].dtype != "object":
-                    st.bar_chart(df[chart_col].value_counts().sort_index())
-                else:
-                    st.warning("Histogram requires numeric data.")
-
-        st.markdown("---")
-
-        # Compare columns
-        st.markdown("### 🔗 Compare Two Numeric Columns")
-
-        num_cols = df.select_dtypes(include=np.number).columns.tolist()
-
-        if len(num_cols) >= 2:
-            colA, colB = st.columns(2)
-
-            with colA:
-                x_col = st.selectbox("X-axis", num_cols)
-
-            with colB:
-                y_col = st.selectbox("Y-axis", num_cols)
-
-            st.line_chart(df[[x_col, y_col]])
-        else:
-            st.warning("⚠ No sufficient numeric columns found for comparison. Try another dataset.")
-
-        st.markdown("---")
-
-        # Correlation
-        st.markdown("### 🔥 Correlation Matrix")
-
-        num_df = df.select_dtypes(include=np.number)
-
-        if not num_df.empty:
-            st.dataframe(num_df.corr(), use_container_width=True)
-        else:
-            st.warning("⚠ No numeric columns available for correlation analysis.")
-
-    # ===== INSIGHTS =====
+    # ================= INSIGHTS =================
     elif menu == "Insights":
-        st.markdown("## 🔥 Key Insights")
+        st.markdown("## 🔥 Insights")
         st.markdown("---")
 
-        column = st.selectbox("Select column for insights", df.columns)
-
-        st.markdown("### 📊 Top Values")
-        st.write(df[column].value_counts().head(5))
-
-        st.markdown("### ⚠ Missing Values")
+        st.markdown("### Missing Values")
         st.bar_chart(df.isnull().sum())
 
-        st.markdown("### ⚠ Outlier Detection")
+        st.markdown("### Outliers")
 
         num_cols = df.select_dtypes(include=np.number).columns
 
-        if len(num_cols) > 0:
-            for col in num_cols:
-                q1 = df[col].quantile(0.25)
-                q3 = df[col].quantile(0.75)
-                iqr = q3 - q1
-                outliers = df[(df[col] < (q1 - 1.5 * iqr)) | (df[col] > (q3 + 1.5 * iqr))]
-
-                st.write(f"{col}: {len(outliers)} outliers")
-        else:
-            st.warning("⚠ No numeric columns available for outlier detection.")
-
-        st.markdown("### 🤖 Summary")
-
-        summary = f"""
-        Dataset contains {df.shape[0]} rows and {df.shape[1]} columns.  
-        Total missing values: {df.isnull().sum().sum()}.
-        """
-        st.info(summary)
+        for col in num_cols:
+            q1 = df[col].quantile(0.25)
+            q3 = df[col].quantile(0.75)
+            iqr = q3 - q1
+            outliers = df[(df[col] < (q1 - 1.5 * iqr)) | (df[col] > (q3 + 1.5 * iqr))]
+            st.write(f"{col}: {len(outliers)} outliers")
 
 else:
-    st.info("📂 Please upload a CSV file to begin.")
+    st.info("📂 Upload a CSV file to start.")
