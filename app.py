@@ -195,4 +195,4 @@ if uploaded_file:
             st.warning("No numeric columns available.")
 
 else:
-    st.info("📂 Upload a CSV file to start.")
+    st.info("📂 Please Upload a CSV file to start.")
