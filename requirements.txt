@@ -5,3 +5,6 @@ SciPy
 matplotlib
 Seaborn
 Scikit-learn
+FastAPI
+Gradio
+TensorFlow
