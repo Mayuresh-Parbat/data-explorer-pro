@@ -7,25 +7,35 @@ It enables users to upload CSV datasets and perform end-to-end exploratory data 
 🚀 Key Features
 📌 Dataset Overview
 Displays total rows, columns, and missing values at a glance
+
 📄 Interactive Data Preview
 Tabular view of the dataset for quick inspection
+
 🔍 Advanced Filtering
 Column-based filtering for targeted data exploration
+
 📊 Data Visualization
 Supports:
 Bar charts
 Line charts
 Histograms
+
 📈 Numeric Analysis
 Compare numerical columns for insights
+
 🔗 Correlation Matrix
 Identify relationships between variables
+
 ⚠️ Missing Value Detection
 Quickly locate incomplete data
+
 🚨 Outlier Detection
 Identify anomalies in numerical data
 📤 Export Functionality
+
 Download filtered datasets as CSV
+
+
 🛠️ Tech Stack
 Python
 Pandas
@@ -45,6 +55,8 @@ cd data-explorer-pro
 pip install -r requirements.txt
 3️⃣ Run the Application
 streamlit run app.py
+
+
 🧑‍💻 How to Use
 Upload a CSV file
 Explore dataset summary
@@ -57,6 +69,7 @@ Academic and college projects
 Quick exploratory data analysis (EDA)
 Data cleaning and preprocessing
 Rapid insights generation
+
 📌 Future Improvements (Optional but powerful for recruiters)
 Add support for Excel files
 Deploy using Streamlit Cloud
